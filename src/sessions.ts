@@ -1,5 +1,6 @@
-import { ErrorObject, QuizObject, setData, getData, SessionObject, Action, State } from './dataStore';
+import { ErrorObject, QuizObject, setData, getData, SessionObject, Action, State, PlayerObject } from './dataStore';
 import {} from './quizv2';
+import { checkPlayerExistence, getSessionFromId, getSessionFromPlayerId } from './util';
 
 export function createSession(quizId: number, authUserId: number, autoStartNum: number): ErrorObject| {sessionId: number} {
   const data = getData();
@@ -152,6 +153,73 @@ export function getSessionStatus(quizId:number, sessionId:number) {
   } else {
     throw new Error('Session not found!');
   }
+}
+
+export function joinPlayer(sessionId: number, name: string) {
+  const session = getSessionFromId(sessionId);
+  if (!session) {
+    throw new Error('Session not found!');
+  }
+  if (session.state !== State.LOBBY) {
+    throw new Error('Session is not in LOBBY state!');
+  }
+  if (name === '') {
+    name = generateName();
+  }
+  if (checkPlayerExistence(name, sessionId)) {
+    throw new Error('This player already exists!');
+  }
+
+  const data = getData();
+  const iD = session.players.length;
+  console.log(iD);
+
+  const newPlayer:PlayerObject = {
+    playerId: iD,
+    name: name,
+    score: 0,
+    session: session.sessionId
+  };
+  const sessionIndex = data.sessions[session.metadata.quizId].findIndex((sessionObject) => {
+    return sessionObject.sessionId === session.sessionId;
+  });
+  data.sessions[session.metadata.quizId][sessionIndex].players.push(newPlayer);
+  setData(data);
+  console.log(iD);
+  return { playerId: iD };
+}
+
+function generateName(): string {
+  const letters = 'abcdefghijklmnopqrstuvwxyz';
+  const digits = '0123456789';
+
+  function getRandomCharacters(source: string, count: number): string {
+    let result = '';
+    const sourceArray = source.split('');
+    for (let i = 0; i < count; i++) {
+      const randomIndex = Math.floor(Math.random() * sourceArray.length);
+      result += sourceArray[randomIndex];
+      sourceArray.splice(randomIndex, 1); // remove the used character to avoid repetition
+    }
+    return result;
+  }
+
+  const randomLetters = getRandomCharacters(letters, 5);
+  const randomNumbers = getRandomCharacters(digits, 3);
+
+  return randomLetters + randomNumbers;
+}
+
+export function getPlayerSession(playerId:number) {
+  const session = getSessionFromPlayerId(playerId);
+  if (!session) {
+    throw new Error();
+  }
+  return {
+    state: session.state,
+    numQuestions: session.metadata.numQuestions,
+    atQuestion: session.atQuestion
+  };
 }
 
 export function viewActiveAndInactiveSessions(authUserId: number, quizId: number) {

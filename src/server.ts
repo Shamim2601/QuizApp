@@ -18,7 +18,7 @@ import {
   serverCheckSessionStateEndForQuiz
 } from './quizv2';
 import { adminQuizNameUpdate, adminQuizDescriptionUpdate, quizQuestionCreate, adminTrashEmpty, adminQuizQuestionUpdate, quizQuestionMove, serverCheckQuizValidRestore, updateQuizThumbnail } from './quizv2';
-import { createSession, quizInTrash, updateState, getSessionStatus, viewActiveAndInactiveSessions, getResultsForSession } from './sessions';
+import { createSession, quizInTrash, updateState, getSessionStatus, viewActiveAndInactiveSessions, getResultsForSession, joinPlayer, getPlayerSession } from './sessions';
 // Set up web app
 const app = express();
 // Use middleware that allows us to access the JSON body of requests
@@ -928,6 +928,27 @@ app.put('/v1/admin/quiz/:quizId/thumbnail', (req: Request, res: Response) => {
   try {
     const result = updateQuizThumbnail(quizId, user.authUserId, imgUrl);
     res.json(result);
+  } catch (e) {
+    return res.status(400).json({ error: e.message });
+  }
+});
+
+app.post('/v1/player/join', (req: Request, res: Response) => {
+  const sessionId = req.body.sessionId;
+  const name = req.body.name;
+  try {
+    const result = joinPlayer(sessionId, name);
+    res.json(result);
+  } catch (e) {
+    return res.status(400).json({ error: e.message });
+  }
+});
+
+app.get('/v1/player/:playerId', (req: Request, res: Response) => {
+  const playerId = req.params.playerId;
+  try {
+    const result = getPlayerSession(parseInt(playerId));
+    return res.json(result);
   } catch (e) {
     return res.status(400).json({ error: e.message });
   }
